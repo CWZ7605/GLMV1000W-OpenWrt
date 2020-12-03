@@ -1,0 +1,2 @@
+# GLMV1000W-OpenWrt
+GLMV1000W 原生OpenWrt
