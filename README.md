@@ -1,2 +1,2 @@
 # GLMV1000W-OpenWrt
-GLMV1000W 原生OpenWrt
+构建 GLMV1000W 原生 OpenWrt
