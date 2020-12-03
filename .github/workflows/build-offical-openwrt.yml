@@ -3,7 +3,7 @@ name: Build Gl-INet MV1000W Offical OpenWrt
 on:
   push:
     branches: 
-      - master
+      - main
     #paths:
     #  - 'gl-mv1000w.config'
   #schedule:
