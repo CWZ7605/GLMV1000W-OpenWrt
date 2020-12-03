@@ -1,0 +1,125 @@
+name: Build Gl-INet MV1000W Offical OpenWrt
+
+on:
+  push:
+    branches: 
+      - master
+    #paths:
+    #  - 'gl-mv1000w.config'
+  #schedule:
+  #  - cron: 0 21 * * *
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_BRANCH: master
+  CONFIG_FILE: gl-mv1000w.config
+  DIY_SH: offical-openwrt.sh
+  FREE_UP_DISK: true
+  TZ: Asia/Shanghai
+  DEVICE: mvebu
+  VERMAGIC_URL: https://downloads.openwrt.org/snapshots/targets/mvebu/cortexa53/packages/Packages.gz
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Free up disk space
+      if: env.FREE_UP_DISK == 'true'
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        docker rmi `docker images -q`
+        sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo ln -s /bin/grep  /usr/bin/grep
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler gperf antlr3 wget swig rsync tree
+
+    - name: Clone source code
+      run: |
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        cd openwrt
+        KERNEL_PATCHVER=`grep KERNEL_PATCHVER target/linux/$DEVICE/Makefile|awk -F= '{print $2}'`
+        LINUX_VERSION=`grep LINUX_VERSION-$KERNEL_PATCHVER include/kernel-version.mk | awk -F' = ' '{print $2}'`
+        wget -q -c $VERMAGIC_URL -O - | zgrep -m 1 "Depends: kernel (=$KERNEL_PATCHVER$LINUX_VERSION.*)$" |sed -e 's/.*-\(.*\))/\1/' > .vermagic
+        sed -i '/.vermagic/ s/^/#/' include/kernel-defaults.mk
+        sed -i '/.vermagic/ s/$/\n\tcp $(TOPDIR)\/.vermagic\ \$(LINUX_DIR)\/.vermagic/' include/kernel-defaults.mk
+        cat .vermagic && grep ".vermagic" include/kernel-defaults.mk
+
+    - name: Update Feeds
+      run: |
+       cd openwrt
+       ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: |
+        cd openwrt
+        ./scripts/feeds install -a
+
+    - name: Load custom configuration
+      run: |
+        [ -e files ] && mv files openwrt/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x *.sh
+        cd openwrt
+        ../$DIY_SH
+        ../create-acl.sh -a
+        make defconfig
+
+    - name: Download package
+      id: package
+      run: |
+        cd openwrt
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile the firmware
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        mkdir -p staging_dir/host/bin/
+        ln -s /usr/bin/upx staging_dir/host/bin/upx
+        make -j$(nproc) || make -j1 V=s
+        echo "::set-output name=status::success"
+
+    - name: Package file
+      id: Package_file
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      run: |
+        cd openwrt/bin/
+        tar zcf Packages.tar.gz packages/
+        mv Packages.tar.gz targets/*/*/
+        cd targets/*/*
+        tar zcf Kernel_Packages.tar.gz packages/
+        rm -fr packages
+        echo "::set-env name=FIRMWARE::$PWD"
+
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y_%m_%d')"
+      
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v1-release
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      with:
+        repo_token: ${{ secrets.REPO_TOKEN }}
+        file: ${{ env.FIRMWARE }}/*
+        tag: v${{steps.date.outputs.date}}_GL-MV1000W
+        overwrite: true
+        file_glob: true
