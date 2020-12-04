@@ -147,8 +147,8 @@ popd
 cp -r ../rtl8192eu package/
 pushd package/rtl8192eu
 git clone https://github.com/Mange/rtl8192eu-linux-driver
-sed -i "s/CONFIG_PLATFORM_I386_PC=y/CONFIG_PLATFORM_I386_PC=n/g" rtl8192eu-linux-driver/Makefile
-sed -i "s/ONFIG_PLATFORM_ARM_AARCH64=n/ONFIG_PLATFORM_ARM_AARCH64=y/g" rtl8192eu-linux-driver/Makefile
+sed -i "s/CONFIG_PLATFORM_I386_PC = y/CONFIG_PLATFORM_I386_PC = n/g" rtl8192eu-linux-driver/Makefile
+sed -i "s/CONFIG_PLATFORM_ARM_AARCH64 = n/CONFIG_PLATFORM_ARM_AARCH64 = y/g" rtl8192eu-linux-driver/Makefile
 popd
 
 # Change default shell to zsh
