@@ -116,9 +116,6 @@ pushd feeds/packages/utils/docker-ce
 sed -i '/runc.installer/s/^/#/g' Makefile
 popd
 
-# Mod ipv6-helper.sh
-sed -i '/filter_aaaa/d;/commit dhcp/d' ../scripts/ipv6-helper.sh
-
 # Remove orig kcptun
 rm -rf ./feeds/packages/net/kcptun
 
