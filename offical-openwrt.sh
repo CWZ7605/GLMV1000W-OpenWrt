@@ -138,13 +138,13 @@ sed -i '/mt7662u_rom_patch.bin/a\\techo mt76-usb disable_usb_sg=1 > $\(1\)\/etc\
 popd
 
 # Add rtl8192eu wireless ddriver
-cp -r ../rtl8192eu package/
-pushd package/rtl8192eu
-#git clone https://github.com/Mange/rtl8192eu-linux-driver
-git clone -b realtek-4.4.x https://github.com/Mange/rtl8192eu-linux-driver.git
-sed -i "s/CONFIG_PLATFORM_I386_PC = y/CONFIG_PLATFORM_I386_PC = n/g" rtl8192eu-linux-driver/Makefile
-sed -i "s/CONFIG_PLATFORM_ARM_AARCH64 = n/CONFIG_PLATFORM_ARM_AARCH64 = y/g" rtl8192eu-linux-driver/Makefile
-popd
+#cp -r ../rtl8192eu package/
+#pushd package/rtl8192eu
+# git clone https://github.com/Mange/rtl8192eu-linux-driver
+#git clone -b realtek-4.4.x https://github.com/Mange/rtl8192eu-linux-driver.git
+#sed -i "s/CONFIG_PLATFORM_I386_PC = y/CONFIG_PLATFORM_I386_PC = n/g" rtl8192eu-linux-driver/Makefile
+#sed -i "s/CONFIG_PLATFORM_ARM_AARCH64 = n/CONFIG_PLATFORM_ARM_AARCH64 = y/g" rtl8192eu-linux-driver/Makefile
+#popd
 
 # Change default shell to zsh
 sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd
