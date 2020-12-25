@@ -112,7 +112,7 @@ jobs:
 
     - name: Get current date
       id: date
-      run: echo "::set-output name=date::$(date +'%Y_%m_%d')"
+      run: echo "::set-output name=date::$(date +'%s%Y%m%d%H%M%S')"
       
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
