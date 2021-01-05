@@ -16,7 +16,7 @@ popd
 # Copy Lean's packages to ./package/lean.
 mkdir package/lean
 pushd package/lede/package/lean
-cp -r {adbyby,automount,baidupcs-web,coremark,ddns-scripts_aliyun,ddns-scripts_dnspod,dns2socks,ipt2socks,ipv6-helper,kcptun,luci-app-adbyby-plus,luci-app-arpbind,luci-app-autoreboot,luci-app-baidupcs-web,luci-app-cifs-mount,luci-app-cpufreq,luci-app-familycloud,luci-app-filetransfer,luci-app-frpc,luci-app-n2n_v2,luci-app-netdata,luci-app-nfs,luci-app-nps,luci-app-ps3netsrv,luci-app-softethervpn,luci-app-usb-printer,luci-app-unblockmusic,luci-app-vsftpd,luci-app-webadmin,luci-app-xlnetacc,luci-lib-fs,microsocks,n2n_v2,npc,pdnsd-alt,proxychains-ng,ps3netsrv,redsocks2,shadowsocksr-libev,simple-obfs,softethervpn5,srelay,tcpping,trojan,UnblockNeteaseMusic,UnblockNeteaseMusicGo,v2ray,v2ray-plugin,vsftpd-alt} "../../../lean"
+cp -r {adbyby,automount,baidupcs-web,coremark,ddns-scripts_aliyun,ddns-scripts_dnspod,dns2socks,ipt2socks,ipv6-helper,kcptun,luci-app-adbyby-plus,luci-app-arpbind,luci-app-autoreboot,luci-app-baidupcs-web,luci-app-cifs-mount,luci-app-cpufreq,luci-app-familycloud,luci-app-filetransfer,luci-app-frpc,luci-app-n2n_v2,luci-app-netdata,luci-app-nfs,luci-app-nft-qos,luci-app-nps,luci-app-ps3netsrv,luci-app-softethervpn,luci-app-usb-printer,luci-app-unblockmusic,luci-app-verysync,luci-app-vsftpd,luci-app-webadmin,luci-app-xlnetacc,luci-lib-fs,microsocks,n2n_v2,npc,pdnsd-alt,proxychains-ng,ps3netsrv,redsocks2,shadowsocksr-libev,simple-obfs,softethervpn5,srelay,tcpping,trojan,UnblockNeteaseMusic,UnblockNeteaseMusicGo,v2ray,v2ray-plugin,verysync,vsftpd-alt,xray} "../../../lean"
 popd
 
 # Default settings
@@ -87,13 +87,8 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 svn co https://github.com/pymumu/smartdns/trunk/package/openwrt ../smartdns
 svn co https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t/luci-app-smartdns ../luci-app-smartdns
 
-# Add luci-app-udp2raw
-svn co https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t/luci-app-udp2raw
-svn co https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t/openwrt-udp2raw
-
-# Add luci-app-speederv2
-svn co https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t/luci-app-speederv2
-svn co https://github.com/project-openwrt/packages/trunk/net/udpspeeder
+# Add luci-udptools
+git clone --depth=1 https://github.com/zcy85611/openwrt-luci-kcp-udp
 
 # Add tmate
 git clone --depth=1 https://github.com/project-openwrt/openwrt-tmate
@@ -105,9 +100,7 @@ popd
 
 # Mod zzz-default-settings
 pushd package/lean/default-settings/files
-sed -i "/commit luci/i\uci set luci.main.mediaurlbase='/luci-static/argon'" zzz-default-settings
 sed -i '/http/d' zzz-default-settings
-sed -i '/exit/i\chmod +x /bin/ipv6-helper' zzz-default-settings
 popd
 
 # Remove orig kcptun
@@ -116,12 +109,8 @@ rm -rf ./feeds/packages/net/kcptun
 # Max connections
 sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
 
-# Remove IPV6
-sed -i 's/ip6tables //g' include/target.mk
-sed -i 's/odhcpd-ipv6only odhcp6c //g' include/target.mk
-
 # Change dnsmasq to dnsmasq-full
-sed -i 's/dnsmasq i/dnsmasq-full i/g' include/target.mk
+sed -i 's/dnsmasq/dnsmasq-full/g' include/target.mk
 
 # Add po2lmo
 git clone https://github.com/openwrt-dev/po2lmo.git
