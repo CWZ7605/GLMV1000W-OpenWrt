@@ -1,20 +1,20 @@
-name: Build Gl-INet MV1000W Offical OpenWrt
+name: Build Gl-INet MV1000W Lean OpenWrt
 
 on:
   push:
     branches: 
       - main
     #paths:
-    #  - 'gl-mv1000w-offical.config'
+    #  - 'gl-mv1000w-lean.config'
   #schedule:
   #  - cron: 0 21 * * *
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
-  CONFIG_FILE: gl-mv1000w-offical.config
-  DIY_SH: offical-openwrt.sh
+  CONFIG_FILE: gl-mv1000w-lean.config
+  DIY_SH: lean-openwrt.sh
   FREE_UP_DISK: true
   TZ: Asia/Shanghai
   DEVICE: mvebu
@@ -77,9 +77,8 @@ jobs:
         chmod +x *.sh
         cd openwrt
         ../$DIY_SH
-        ../create-acl.sh -a
-        mkdir -p files/etc/uci-defaults/
-        cp ../init-settings.sh files/etc/uci-defaults/99-init-settings
+        rm -f package/lean/autocore/files/arm/sbin/cpuinfo
+        cp -f ../cpuinfo package/lean/autocore/files/arm/sbin
         make defconfig
 
     - name: Download package
