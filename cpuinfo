@@ -3,7 +3,7 @@ cpu_arch="$(cat "/proc/cpuinfo" | grep "model name" | sed -n "1p" | awk -F ': ' 
 [ -z "${cpu_arch}"  ] && cpu_arch="Mvebu CortexA53 Processor"
 cpu_cores="$(cat "/proc/cpuinfo" | grep "processor" | wc -l)"
 
-if [ ! -f "/sys/class/thermal/thermal_zone0/temp" ]; then
+if [ -f "/sys/class/thermal/thermal_zone0/temp" ]; then
   sys_temp="$(awk "BEGIN{printf (\"%.1f\n\",$(cat /sys/class/thermal/thermal_zone0/temp)/1000) }")°C"
   echo -n "${cpu_arch} x ${cpu_cores} (${sys_temp})"
 else
