@@ -78,6 +78,8 @@ jobs:
         cd openwrt
         ../$DIY_SH
         ../create-acl.sh -a
+        rm -f package/lean/autocore/files/arm/sbin/cpuinfo
+        cp -f ../cpuinfo package/lean/autocore/files/arm/sbin
         mkdir -p files/etc/uci-defaults/
         cp ../init-settings.sh files/etc/uci-defaults/99-init-settings
         make defconfig
@@ -114,7 +116,7 @@ jobs:
 
     - name: Get current date
       id: date
-      run: echo "::set-output name=date::$(date +'%s%Y%m%d%H%M%S')"
+      run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S%s')"
       
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
@@ -122,6 +124,6 @@ jobs:
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         file: ${{ env.FIRMWARE }}/*
-        tag: v${{steps.date.outputs.date}}_GL-MV1000W
+        tag: GL-MV1000W_Offical_V${{steps.date.outputs.date}}_GL-MV1000W
         overwrite: true
         file_glob: true
