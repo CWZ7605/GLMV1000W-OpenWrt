@@ -1,0 +1,172 @@
+name: Build Raspberry Pi 4B Lean OpenWrt
+
+on:
+  push:
+    branches: 
+      - main
+    #paths:
+    #  - 'raspberrypi4b.config'
+  #schedule:
+  #  - cron: 0 21 * * *
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
+  CONFIG_FILE: raspberrypi4b.config
+  DIY_SH: lean-openwrt.sh
+  FREE_UP_DISK: true
+  TZ: Asia/Shanghai
+  DEVICE: bcm27xx
+  VERMAGIC_URL: https://downloads.openwrt.org/snapshots/targets/bcm27xx/bcm2711/packages/Packages.gz
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    outputs:
+      OPENWRTROOT: ${{ steps.update.outputs.OPENWRTROOT }}
+      PLATFORM: ${{ steps.compile.outputs.PLATFORM }}
+      TARGET: ${{ steps.compile.outputs.TARGET }}
+      SUBTARGET: ${{ steps.compile.outputs.SUBTARGET }}
+      GENERATE_STATUS: ${{ steps.generate.outputs.GENERATE_STATUS }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Free up disk space
+      if: env.FREE_UP_DISK == 'true'
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        docker rmi `docker images -q`
+        sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo ln -s /bin/grep  /usr/bin/grep
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler gperf antlr3 wget swig rsync tree
+
+    - name: Clone source code
+      run: |
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        cd openwrt
+        KERNEL_PATCHVER=`grep KERNEL_PATCHVER target/linux/$DEVICE/Makefile|awk -F= '{print $2}'`
+        LINUX_VERSION=`grep LINUX_VERSION-$KERNEL_PATCHVER include/kernel-version.mk | awk -F' = ' '{print $2}'`
+        wget -q -c $VERMAGIC_URL -O - | zgrep -m 1 "Depends: kernel (=$KERNEL_PATCHVER$LINUX_VERSION.*)$" |sed -e 's/.*-\(.*\))/\1/' > .vermagic
+        sed -i '/.vermagic/ s/^/#/' include/kernel-defaults.mk
+        sed -i '/.vermagic/ s/$/\n\tcp $(TOPDIR)\/.vermagic\ \$(LINUX_DIR)\/.vermagic/' include/kernel-defaults.mk
+        cat .vermagic && grep ".vermagic" include/kernel-defaults.mk
+
+    - name: Update Feeds
+      id: update
+      run: |
+       cd openwrt
+       echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
+       echo "::set-output name=OPENWRTROOT::$(echo $PWD)"
+       ./scripts/feeds update -a
+
+    - name: Install feeds
+      run: |
+        cd $OPENWRTROOT
+        ./scripts/feeds install -a
+
+    - name: Load custom configuration
+      run: |
+        [ -e files ] && mv files $OPENWRTROOT/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRTROOT/.config
+        chmod +x *.sh
+        cd $OPENWRTROOT
+        ../$DIY_SH
+        ../preset-terminal-tools.sh
+        rm -f package/lean/autocore/files/arm/sbin/cpuinfo
+        cp -f ../cpuinfo.rpi4 package/lean/autocore/files/arm/sbin
+
+    - name: Download package
+      id: package
+      run: |
+        cd $OPENWRTROOT
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile the firmware
+      id: compile
+      run: |
+        cd $OPENWRTROOT
+        echo -e "$(nproc) thread compile"
+        mkdir -p staging_dir/host/bin/
+        ln -s /usr/bin/upx staging_dir/host/bin/upx
+        make tools/compile -j$(nproc) || make tools/compile -j1 V=s
+        make toolchain/compile -j$(nproc) || make toolchain/compile -j1 V=s
+        make target/compile -j$(nproc) || make target/compile -j1 V=s IGNORE_ERRORS=1
+        make diffconfig
+        make package/compile -j$(nproc) IGNORE_ERRORS=1 || make package/compile -j1 V=s IGNORE_ERRORS=1
+        make package/index
+        cd $OPENWRTROOT/bin/packages/*
+        PLATFORM=$(basename `pwd`)
+        echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
+        echo "::set-output name=PLATFORM::$(echo $PLATFORM)"
+        cd $OPENWRTROOT/bin/targets/*
+        TARGET=$(basename `pwd`)
+        echo "TARGET=$TARGET" >> $GITHUB_ENV
+        echo "::set-output name=TARGET::$(echo $TARGET)"
+        cd *
+        SUBTARGET=$(basename `pwd`)
+        echo "SUBTARGET=$SUBTARGET" >> $GITHUB_ENV
+        echo "::set-output name=SUBTARGET::$(echo $SUBTARGET)"
+        echo "::set-output name=COMPILE_STATUS::success"
+
+    - name: Generate Firmware
+      id: generate
+      if: steps.compile.outputs.COMPILE_STATUS == 'success' && !cancelled()
+      run: |
+        cd $OPENWRTROOT
+        mkdir -p files/etc/uci-defaults/
+        cp ../init-settings.sh files/etc/uci-defaults/99-init-settings
+        mkdir -p files/www/ipv6-modules
+        cp bin/packages/$PLATFORM/luci/luci-proto-ipv6* files/www/ipv6-modules
+        cp bin/packages/$PLATFORM/base/{ipv6helper*,odhcpd-ipv6only*,odhcp6c*,6in4*} "files/www/ipv6-modules"
+        cp bin/targets/$TARGET/$SUBTARGET/packages/{ip6tables*,kmod-nf-nat6*,kmod-ipt-nat6*,kmod-sit*,kmod-ip6tables-extra*} "files/www/ipv6-modules"
+        mkdir -p files/bin
+        cp ../ipv6-helper.sh files/bin/ipv6-helper
+        make package/install -j$(nproc) || make package/install -j1 V=s
+        make target/install -j$(nproc) || make target/install -j1 V=s
+        make checksum
+        echo "::set-output name=GENERATE_STATUS::success"
+
+    - name: Package file
+      id: packagefile
+      if: steps.generate.outputs.GENERATE_STATUS == 'success' && !cancelled()
+      run: |
+        cd $OPENWRTROOT/bin/
+        tar zcf Packages.tar.gz packages/
+        mv Packages.tar.gz targets/*/*/
+        cd targets/*/*
+        tar zcf Kernel_Packages.tar.gz packages/
+        rm -fr packages
+        echo "::set-env name=FIRMWARE::$PWD"
+        echo "::set-output name=PACKAGE_STATUS::success"
+
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S%s')"
+      
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v1-release
+      if: steps.packagefile.outputs.PACKAGE_STATUS == 'success' && !cancelled()
+      with:
+        repo_token: ${{ secrets.REPO_TOKEN }}
+        file: ${{ env.FIRMWARE }}/*
+        tag: Rpi4B_Lean_V${{steps.date.outputs.date}}
+        overwrite: true
+        file_glob: true
