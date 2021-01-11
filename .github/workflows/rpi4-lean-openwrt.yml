@@ -86,6 +86,7 @@ jobs:
         chmod +x *.sh
         cd $OPENWRTROOT
         ../$DIY_SH
+        ../preset-clash-core.sh armv8
         ../preset-terminal-tools.sh
         rm -f package/lean/autocore/files/arm/sbin/cpuinfo
         cp -f ../cpuinfo.rpi4 package/lean/autocore/files/arm/sbin
