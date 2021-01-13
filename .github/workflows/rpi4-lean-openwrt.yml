@@ -157,7 +157,7 @@ jobs:
       if: steps.packagefile.outputs.PACKAGE_STATUS == 'success' && !cancelled()
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
-        file: ${FIRMWARE}/*
-        tag: Rpi4B_Lean_V${FIRMWARE_DATE}
+        file: ${{ env.FIRMWARE }}/*
+        tag: Rpi4B_Lean_V${{ env.FIRMWARE_DATE }}
         overwrite: true
         file_glob: true
