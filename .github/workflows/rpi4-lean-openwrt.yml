@@ -22,12 +22,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-18.04
-    outputs:
-      OPENWRTROOT: ${{ steps.update.outputs.OPENWRTROOT }}
-      PLATFORM: ${{ steps.compile.outputs.PLATFORM }}
-      TARGET: ${{ steps.compile.outputs.TARGET }}
-      SUBTARGET: ${{ steps.compile.outputs.SUBTARGET }}
-      GENERATE_STATUS: ${{ steps.generate.outputs.GENERATE_STATUS }}
 
     steps:
     - name: Checkout
@@ -46,6 +40,7 @@ jobs:
         sudo timedatectl set-timezone "$TZ"
 
     - name: Clone source code
+      id: clone
       run: |
         df -hT $PWD
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
@@ -56,12 +51,12 @@ jobs:
         sed -i '/.vermagic/ s/^/#/' include/kernel-defaults.mk
         sed -i '/.vermagic/ s/$/\n\tcp $(TOPDIR)\/.vermagic\ \$(LINUX_DIR)\/.vermagic/' include/kernel-defaults.mk
         cat .vermagic && grep ".vermagic" include/kernel-defaults.mk
+        echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
 
     - name: Update Feeds
       id: update
       run: |
-       cd openwrt
-       echo "::set-output name=OPENWRTROOT::$(echo $PWD)"
+       cd $OPENWRTROOT
        ./scripts/feeds update -a
 
     - name: Install feeds
@@ -105,13 +100,14 @@ jobs:
         make package/index
         cd $OPENWRTROOT/bin/packages/*
         PLATFORM=$(basename `pwd`)
-        echo "::set-output name=PLATFORM::$(echo $PLATFORM)"
+        echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
         cd $OPENWRTROOT/bin/targets/*
         TARGET=$(basename `pwd`)
-        echo "::set-output name=TARGET::$(echo $TARGET)"
+        echo "TARGET=$TARGET" >> $GITHUB_ENV
         cd *
         SUBTARGET=$(basename `pwd`)
-        echo "::set-output name=SUBTARGET::$(echo $SUBTARGET)"
+        echo "SUBTARGET=$SUBTARGET" >> $GITHUB_ENV
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "::set-output name=COMPILE_STATUS::success"
 
     - name: Generate Firmware
@@ -142,7 +138,8 @@ jobs:
         cd targets/*/*
         tar zcf Kernel_Packages.tar.gz packages/
         rm -fr packages
-        echo "::set-env name=FIRMWARE::$PWD"
+        FIRMWARE_DATE=`date +'%Y%m%d%H%M%S%s'`
+        echo "FIRMWARE_DATE=$FIRMWARE_DATE" >> $GITHUB_ENV
         echo "::set-output name=PACKAGE_STATUS::success"
 
     - name: Get current date
@@ -154,7 +151,7 @@ jobs:
       if: steps.packagefile.outputs.PACKAGE_STATUS == 'success' && !cancelled()
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
-        file: ${{ env.FIRMWARE }}/*
-        tag: Rpi4B_Lean_V${{steps.date.outputs.date}}
+        file: ${FIRMWARE}/*
+        tag: Rpi4B_Lean_V${FIRMWARE_DATE}
         overwrite: true
         file_glob: true
