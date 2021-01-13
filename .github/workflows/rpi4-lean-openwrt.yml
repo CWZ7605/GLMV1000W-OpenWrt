@@ -15,7 +15,6 @@ env:
   REPO_BRANCH: master
   CONFIG_FILE: raspberrypi4b.config
   DIY_SH: lean-openwrt.sh
-  FREE_UP_DISK: true
   TZ: Asia/Shanghai
   DEVICE: bcm27xx
   VERMAGIC_URL: https://downloads.openwrt.org/snapshots/targets/bcm27xx/bcm2711/packages/Packages.gz
@@ -34,18 +33,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Free up disk space
-      if: env.FREE_UP_DISK == 'true'
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        docker rmi `docker images -q`
-        sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
-        sudo timedatectl set-timezone "$TZ"
-
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -53,10 +40,14 @@ jobs:
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo ln -s /bin/grep  /usr/bin/grep
         sudo -E apt-get -qq update
-        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler gperf antlr3 wget swig rsync tree
+        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-1804) tree
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
 
     - name: Clone source code
       run: |
+        df -hT $PWD
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         KERNEL_PATCHVER=`grep KERNEL_PATCHVER target/linux/$DEVICE/Makefile|awk -F= '{print $2}'`
@@ -70,7 +61,6 @@ jobs:
       id: update
       run: |
        cd openwrt
-       echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
        echo "::set-output name=OPENWRTROOT::$(echo $PWD)"
        ./scripts/feeds update -a
 
@@ -115,15 +105,12 @@ jobs:
         make package/index
         cd $OPENWRTROOT/bin/packages/*
         PLATFORM=$(basename `pwd`)
-        echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
         echo "::set-output name=PLATFORM::$(echo $PLATFORM)"
         cd $OPENWRTROOT/bin/targets/*
         TARGET=$(basename `pwd`)
-        echo "TARGET=$TARGET" >> $GITHUB_ENV
         echo "::set-output name=TARGET::$(echo $TARGET)"
         cd *
         SUBTARGET=$(basename `pwd`)
-        echo "SUBTARGET=$SUBTARGET" >> $GITHUB_ENV
         echo "::set-output name=SUBTARGET::$(echo $SUBTARGET)"
         echo "::set-output name=COMPILE_STATUS::success"
 
