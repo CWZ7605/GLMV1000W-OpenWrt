@@ -1,4 +1,4 @@
-name: Build Gl-INet MV1000W Lean OpenWrt
+name: Build GLMV1000W Lean OpenWrt
 
 on:
   push:
@@ -15,7 +15,6 @@ env:
   REPO_BRANCH: master
   CONFIG_FILE: gl-mv1000w-lean.config
   DIY_SH: lean-openwrt.sh
-  FREE_UP_DISK: true
   TZ: Asia/Shanghai
   DEVICE: mvebu
   VERMAGIC_URL: https://downloads.openwrt.org/snapshots/targets/mvebu/cortexa53/packages/Packages.gz
@@ -23,40 +22,30 @@ env:
 jobs:
   build:
     runs-on: ubuntu-18.04
-    outputs:
-      OPENWRTROOT: ${{ steps.update.outputs.OPENWRTROOT }}
-      PLATFORM: ${{ steps.compile.outputs.PLATFORM }}
-      TARGET: ${{ steps.compile.outputs.TARGET }}
-      SUBTARGET: ${{ steps.compile.outputs.SUBTARGET }}
-      GENERATE_STATUS: ${{ steps.generate.outputs.GENERATE_STATUS }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Free up disk space
-      if: env.FREE_UP_DISK == 'true'
+    - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo rm -rf /usr/share/dotnet
         docker rmi `docker images -q`
         sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo ln -s /bin/grep  /usr/bin/grep
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-1804) tree
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
 
-    - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo ln -s /bin/grep  /usr/bin/grep
-        sudo -E apt-get -qq update
-        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler gperf antlr3 wget swig rsync tree
-
     - name: Clone source code
+      id: clone
       run: |
+        df -hT $PWD
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         KERNEL_PATCHVER=`grep KERNEL_PATCHVER target/linux/$DEVICE/Makefile|awk -F= '{print $2}'`
@@ -65,13 +54,12 @@ jobs:
         sed -i '/.vermagic/ s/^/#/' include/kernel-defaults.mk
         sed -i '/.vermagic/ s/$/\n\tcp $(TOPDIR)\/.vermagic\ \$(LINUX_DIR)\/.vermagic/' include/kernel-defaults.mk
         cat .vermagic && grep ".vermagic" include/kernel-defaults.mk
+        echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
 
     - name: Update Feeds
       id: update
       run: |
-       cd openwrt
-       echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
-       echo "::set-output name=OPENWRTROOT::$(echo $PWD)"
+       cd $OPENWRTROOT
        ./scripts/feeds update -a
 
     - name: Install feeds
@@ -86,9 +74,10 @@ jobs:
         chmod +x *.sh
         cd $OPENWRTROOT
         ../$DIY_SH
+        ../preset-clash-core.sh armv8
         ../preset-terminal-tools.sh
         rm -f package/lean/autocore/files/arm/sbin/cpuinfo
-        cp -f ../cpuinfo package/lean/autocore/files/arm/sbin
+        cp -f ../cpuinfo package/lean/autocore/files/arm/sbin/
 
     - name: Download package
       id: package
@@ -115,15 +104,13 @@ jobs:
         cd $OPENWRTROOT/bin/packages/*
         PLATFORM=$(basename `pwd`)
         echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
-        echo "::set-output name=PLATFORM::$(echo $PLATFORM)"
         cd $OPENWRTROOT/bin/targets/*
         TARGET=$(basename `pwd`)
         echo "TARGET=$TARGET" >> $GITHUB_ENV
-        echo "::set-output name=TARGET::$(echo $TARGET)"
         cd *
+        ls -lh
         SUBTARGET=$(basename `pwd`)
         echo "SUBTARGET=$SUBTARGET" >> $GITHUB_ENV
-        echo "::set-output name=SUBTARGET::$(echo $SUBTARGET)"
         echo "::set-output name=COMPILE_STATUS::success"
 
     - name: Generate Firmware
@@ -139,8 +126,11 @@ jobs:
         cp bin/targets/$TARGET/$SUBTARGET/packages/{ip6tables*,kmod-nf-nat6*,kmod-ipt-nat6*,kmod-sit*,kmod-ip6tables-extra*} "files/www/ipv6-modules"
         mkdir -p files/bin
         cp ../ipv6-helper.sh files/bin/ipv6-helper
+        df -hT
         make package/install -j$(nproc) || make package/install -j1 V=s
+        df -hT
         make target/install -j$(nproc) || make target/install -j1 V=s
+        df -hT
         make checksum
         echo "::set-output name=GENERATE_STATUS::success"
 
@@ -154,7 +144,10 @@ jobs:
         cd targets/*/*
         tar zcf Kernel_Packages.tar.gz packages/
         rm -fr packages
-        echo "::set-env name=FIRMWARE::$PWD"
+        ls -lh
+        FIRMWARE_DATE=`date +'%Y%m%d%H%M%S%s'`
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "FIRMWARE_DATE=$FIRMWARE_DATE" >> $GITHUB_ENV
         echo "::set-output name=PACKAGE_STATUS::success"
 
     - name: Get current date
@@ -167,6 +160,6 @@ jobs:
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         file: ${{ env.FIRMWARE }}/*
-        tag: GL-MV1000W_Lean_V${{steps.date.outputs.date}}
+        tag: GLMV1000W_Lean_V${{ env.FIRMWARE_DATE }}
         overwrite: true
         file_glob: true
