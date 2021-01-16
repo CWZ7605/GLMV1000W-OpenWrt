@@ -77,6 +77,7 @@ jobs:
         ../preset-clash-core.sh armv8
         ../preset-terminal-tools.sh
         ../create-acl.sh -a
+        mkdir -p package/lean/autocore/files/arm/sbin/
         rm -f package/lean/autocore/files/arm/sbin/cpuinfo
         cp -f ../cpuinfo package/lean/autocore/files/arm/sbin/
 
