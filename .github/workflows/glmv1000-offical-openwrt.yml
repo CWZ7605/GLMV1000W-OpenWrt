@@ -1,4 +1,4 @@
-name: Build GLMV1000W Lean OpenWrt
+name: Build GLMV1000W Offical OpenWrt
 
 on:
   push:
@@ -11,10 +11,10 @@ on:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: master
   CONFIG_FILE: gl-mv1000w.config
-  DIY_SH: lean-openwrt.sh
+  DIY_SH: offical-openwrt.sh
   TZ: Asia/Shanghai
   DEVICE: mvebu
   VERMAGIC_URL: https://downloads.openwrt.org/snapshots/targets/mvebu/cortexa53/packages/Packages.gz
@@ -76,6 +76,7 @@ jobs:
         ../$DIY_SH
         ../preset-clash-core.sh armv8
         ../preset-terminal-tools.sh
+        ../create-acl.sh -a
         rm -f package/lean/autocore/files/arm/sbin/cpuinfo
         cp -f ../cpuinfo package/lean/autocore/files/arm/sbin/
 
@@ -160,6 +161,6 @@ jobs:
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         file: ${{ env.FIRMWARE }}/*
-        tag: GLMV1000W_Lean_V${{ env.FIRMWARE_DATE }}
+        tag: GLMV1000W_Offiacl_V${{ env.FIRMWARE_DATE }}
         overwrite: true
         file_glob: true
