@@ -5,7 +5,7 @@ on:
     branches: 
       - main
     paths:
-      - 'gl-mv1000w.config'
+      - 'gl-mv1000w-offical.config'
   #schedule:
   #  - cron: 0 21 * * *
 
@@ -13,7 +13,7 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: master
-  CONFIG_FILE: gl-mv1000w.config
+  CONFIG_FILE: gl-mv1000w-offical.config
   DIY_SH: offical-openwrt.sh
   TZ: Asia/Shanghai
   DEVICE: mvebu
@@ -162,6 +162,6 @@ jobs:
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         file: ${{ env.FIRMWARE }}/*
-        tag: GLMV1000W_Offiacl_V${{ env.FIRMWARE_DATE }}
+        tag: GLMV1000W_Offical_V${{ env.FIRMWARE_DATE }}
         overwrite: true
         file_glob: true

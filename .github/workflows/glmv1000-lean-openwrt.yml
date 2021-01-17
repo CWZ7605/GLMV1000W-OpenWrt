@@ -5,7 +5,7 @@ on:
     branches: 
       - main
     paths:
-      - 'gl-mv1000w.config'
+      - 'gl-mv1000w-lean.config'
   #schedule:
   #  - cron: 0 21 * * *
 
@@ -13,7 +13,7 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
-  CONFIG_FILE: gl-mv1000w.config
+  CONFIG_FILE: gl-mv1000w-lean.config
   DIY_SH: lean-openwrt.sh
   TZ: Asia/Shanghai
   DEVICE: mvebu
