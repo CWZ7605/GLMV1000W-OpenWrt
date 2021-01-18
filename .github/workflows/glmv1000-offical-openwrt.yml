@@ -74,9 +74,6 @@ jobs:
         chmod +x *.sh
         cd $OPENWRTROOT
         ../$DIY_SH
-        ../preset-clash-core.sh armv8
-        ../preset-terminal-tools.sh
-        ../create-acl.sh -a
         mkdir -p package/lean/autocore/files/arm/sbin/
         rm -f package/lean/autocore/files/arm/sbin/cpuinfo
         cp -f ../cpuinfo package/lean/autocore/files/arm/sbin/
@@ -97,8 +94,6 @@ jobs:
         echo -e "$(nproc) thread compile"
         mkdir -p staging_dir/host/bin/
         ln -s /usr/bin/upx staging_dir/host/bin/upx
-        mkdir -p files/etc/uci-defaults/
-        cp ../init-settings.sh files/etc/uci-defaults/99-init-settings
         make -j$(nproc) || make -j1 V=s
         echo "::set-output name=COMPILE_STATUS::success"
 
@@ -128,6 +123,6 @@ jobs:
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         file: ${{ env.FIRMWARE }}/*
-        tag: GLMV1000W_Offical_V${{ env.FIRMWARE_DATE }}
+        tag: GLMV1000_Offical_V${{ env.FIRMWARE_DATE }}
         overwrite: true
         file_glob: true
