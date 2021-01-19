@@ -92,7 +92,8 @@ rm -rf ./feeds/packages/net/kcptun
 sed -i 's/dnsmasq/dnsmasq-full/g' include/target.mk
 
 # Change golang version
-sed -i "s/GO_VERSION_MAJOR_MINOR:=1.13/GO_VERSION_MAJOR_MINOR:=1.15/g" feeds/packages/lang/golang/golang-version.mk
+sed -i 's/^GO_VERSION_MAJOR_MINOR.*/GO_VERSION_MAJOR_MINOR:=1.15/g' feeds/packages/lang/golang/golang-version.mk
+sed -i 's/^GO_VERSION_PATCH.*/GO_VERSION_PATCH:=6/g' feeds/packages/lang/golang/golang-version.mk
 
 # Add po2lmo
 git clone https://github.com/openwrt-dev/po2lmo.git
