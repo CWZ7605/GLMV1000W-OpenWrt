@@ -74,9 +74,8 @@ jobs:
         chmod +x *.sh
         cd $OPENWRTROOT
         ../$DIY_SH
-        mkdir -p package/lean/autocore/files/arm/sbin/
-        rm -f package/lean/autocore/files/arm/sbin/cpuinfo
-        cp -f ../cpuinfo package/lean/autocore/files/arm/sbin/
+        rm -f package/lean/autocore/files/arm/cpuinfo
+        cp -f ../cpuinfo package/lean/autocore/files/arm/
 
     - name: Download package
       id: package
