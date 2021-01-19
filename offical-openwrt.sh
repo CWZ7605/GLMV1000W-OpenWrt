@@ -23,9 +23,6 @@ popd
 pushd package/lean
 git clone --depth=1 https://github.com/SuLingGG/default-settings
 
-# Change golang version
-sed -i "s/GO_VERSION_MAJOR_MINOR:=1.13/GO_VERSION_MAJOR_MINOR:=1.15/g" feeds/packages/lang/golang/golang-version.mk
-
 # Add Project OpenWrt's autocore
 rm -rf autocore
 svn co https://github.com/project-openwrt/openwrt/branches/master/package/lean/autocore
@@ -93,6 +90,9 @@ rm -rf ./feeds/packages/net/kcptun
 
 # Change dnsmasq to dnsmasq-full
 sed -i 's/dnsmasq/dnsmasq-full/g' include/target.mk
+
+# Change golang version
+sed -i "s/GO_VERSION_MAJOR_MINOR:=1.13/GO_VERSION_MAJOR_MINOR:=1.15/g" feeds/packages/lang/golang/golang-version.mk
 
 # Add po2lmo
 git clone https://github.com/openwrt-dev/po2lmo.git
