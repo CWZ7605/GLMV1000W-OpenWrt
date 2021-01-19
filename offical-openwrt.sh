@@ -23,6 +23,9 @@ popd
 pushd package/lean
 git clone --depth=1 https://github.com/SuLingGG/default-settings
 
+# Change golang version
+sed -i "s/GO_VERSION_MAJOR_MINOR:=1.13/GO_VERSION_MAJOR_MINOR:=1.15/g" feeds/packages/lang/golang/golang-version.mk
+
 # Add Project OpenWrt's autocore
 rm -rf autocore
 svn co https://github.com/project-openwrt/openwrt/branches/master/package/lean/autocore
