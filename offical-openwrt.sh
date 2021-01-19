@@ -94,6 +94,7 @@ sed -i 's/dnsmasq/dnsmasq-full/g' include/target.mk
 # Change golang version
 sed -i 's/^GO_VERSION_MAJOR_MINOR.*/GO_VERSION_MAJOR_MINOR:=1.15/g' feeds/packages/lang/golang/golang-version.mk
 sed -i 's/^GO_VERSION_PATCH.*/GO_VERSION_PATCH:=6/g' feeds/packages/lang/golang/golang-version.mk
+sed -i 's/^PKG_HASH.*/PKG_HASH:=890bba73c5e2b19ffb1180e385ea225059eb008eb91b694875dd86ea48675817/g' feeds/packages/lang/golang/golang/Makefile
 
 # Add po2lmo
 git clone https://github.com/openwrt-dev/po2lmo.git
