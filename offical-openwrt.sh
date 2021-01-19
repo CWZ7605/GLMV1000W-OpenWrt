@@ -70,8 +70,16 @@ git clone --depth=1 https://github.com/frainzy1477/luci-app-trojan
 
 popd
 
+# Mod zzz-default-settings
+pushd package/lean/default-settings/files
+sed -i '/http/d' zzz-default-settings
+popd
+
 # Max connections
 sed -i 's/16384/65536/g' package/kernel/linux/files/sysctl-nf-conntrack.conf
+
+# Remove orig kcptun
+rm -rf ./feeds/packages/net/kcptun
 
 # Change dnsmasq to dnsmasq-full
 sed -i 's/dnsmasq/dnsmasq-full/g' include/target.mk
@@ -81,3 +89,12 @@ git clone https://github.com/openwrt-dev/po2lmo.git
 pushd po2lmo
 make && sudo make install
 popd
+
+# Fix mt76 wireless driver
+pushd package/kernel/mt76
+sed -i '/mt7662u_rom_patch.bin/a\\techo mt76-usb disable_usb_sg=1 > $\(1\)\/etc\/modules.d\/mt76-usb' Makefile
+popd
+
+# Change default shell to zsh
+sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd
+
