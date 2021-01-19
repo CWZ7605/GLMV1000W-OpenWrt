@@ -11,8 +11,8 @@ on:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: master
+  REPO_URL: https://github.com/gl-inet/openwrt.git
+  REPO_BRANCH: openwrt-19.07.5
   CONFIG_FILE: gl-mv1000w-offical.config
   DIY_SH: offical-openwrt.sh
   TZ: Asia/Shanghai
