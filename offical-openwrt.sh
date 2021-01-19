@@ -68,6 +68,13 @@ git clone --depth=1 https://github.com/tindy2013/openwrt-subconverter
 # Add luci-trojan-go
 git clone --depth=1 https://github.com/frainzy1477/luci-app-trojan
 
+# Add luci-theme-argon
+git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
+git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
+
+# Add tmate
+git clone --depth=1 https://github.com/project-openwrt/openwrt-tmate
+
 popd
 
 # Mod zzz-default-settings
