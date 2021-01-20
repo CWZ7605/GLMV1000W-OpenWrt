@@ -17,7 +17,7 @@ env:
   DIY_SH: offical-openwrt.sh
   TZ: Asia/Shanghai
   DEVICE: mvebu
-  VERMAGIC_URL: https://downloads.openwrt.org/snapshots/targets/mvebu/cortexa53/packages/Packages.gz
+  VERMAGIC_URL: https://downloads.openwrt.org/releases/19.07.5/targets/mvebu/cortexa53/packages/Packages.gz
 
 jobs:
   build:
