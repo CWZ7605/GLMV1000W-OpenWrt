@@ -81,8 +81,8 @@ jobs:
         chmod +x *.sh
         cd $OPENWRTROOT
         ../$DIY_SH
-        rm -f package/lean/autocore/files/arm/cpuinfo
-        cp -f ../cpuinfo package/lean/autocore/files/arm/
+        rm -f package/lean/autocore/files/cpuinfo
+        cp -f ../cpuinfo package/lean/autocore/files/
 
     - name: Download package
       id: package
