@@ -48,6 +48,9 @@ git clone --depth=1 https://github.com/Lienol/openwrt-package
 # Add luci-app-passwall
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall
 
+# Add OpenClash.
+git clone -b master --depth=1 https://github.com/vernesong/OpenClash
+
 # Add luci-app-onliner. (need luci-app-nlbwmon)
 git clone --depth=1 https://github.com/rufengsuixing/luci-app-onliner
 
@@ -74,6 +77,9 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 
 # Add tmate
 git clone --depth=1 https://github.com/project-openwrt/openwrt-tmate
+
+# Add OpenAppFilter
+git clone --depth=1 https://github.com/destan19/OpenAppFilter
 
 popd
 
