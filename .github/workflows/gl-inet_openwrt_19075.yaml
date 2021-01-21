@@ -1,11 +1,11 @@
-name: Build GLMV1000W Offical OpenWrt
+name: Build GLMV1000W GL-INet OpenWrt
 
 on:
   push:
     branches: 
       - main
     paths:
-      - 'gl-mv1000w-offical.config'
+      - 'gl-inet_mv1000w.config'
   #schedule:
   #  - cron: 0 21 * * *
 
@@ -13,8 +13,8 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
   REPO_URL: https://github.com/gl-inet/openwrt.git
   REPO_BRANCH: openwrt-19.07.5
-  CONFIG_FILE: gl-mv1000w-offical.config
-  DIY_SH: offical-openwrt.sh
+  CONFIG_FILE: gl-inet_mv1000w.config
+  DIY_SH: gl-inet_openwrt.sh
   TZ: Asia/Shanghai
   DEVICE: mvebu
   VERMAGIC_URL: https://downloads.openwrt.org/releases/19.07.5/targets/mvebu/cortexa53/packages/Packages.gz
@@ -25,9 +25,11 @@ jobs:
 
     steps:
     - name: Checkout
+      id: checkout
       uses: actions/checkout@master
 
-    - name: Initialization environment
+    - name: Init
+      id: init
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
@@ -43,11 +45,12 @@ jobs:
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
 
-    - name: Clone source code
+    - name: Clone
       id: clone
       run: |
         df -hT $PWD
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+        # Synchronize openwrt community vermagic
         cd openwrt
         KERNEL_PATCHVER=`grep KERNEL_PATCHVER target/linux/$DEVICE/Makefile|awk -F= '{print $2}'`
         LINUX_VERSION=`grep LINUX_VERSION-$KERNEL_PATCHVER include/kernel-version.mk | awk -F' = ' '{print $2}'`
@@ -57,8 +60,8 @@ jobs:
         cat .vermagic && grep ".vermagic" include/kernel-defaults.mk
         echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
 
-    - name: Update Feeds
-      id: update
+    - name: Feeds
+      id: feeds
       run: |
        cd $OPENWRTROOT
        echo "#src-git gli_pub https://github.com/gl-inet/gli-pub.git" > feeds.conf.default
@@ -68,13 +71,14 @@ jobs:
        echo "src-git telephony https://git.openwrt.org/feed/telephony.git;openwrt-19.07" >> feeds.conf.default
        echo "src-git freifunk https://github.com/freifunk/openwrt-packages.git;openwrt-19.07" >> feeds.conf.default
        ./scripts/feeds update -a
+       if [ "$?" -ne "0" ]; then
+         echo "!!!!!! Feeds Update Error !!!!!!"
+         exit 1
+       fi
+       ./scripts/feeds install -a
 
-    - name: Install feeds
-      run: |
-        cd $OPENWRTROOT
-        ./scripts/feeds install -a
-
-    - name: Load custom configuration
+    - name: LoadConf
+      id: loadconf
       run: |
         [ -e files ] && mv files $OPENWRTROOT/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRTROOT/.config
@@ -83,17 +87,17 @@ jobs:
         ../$DIY_SH
         rm -f package/lean/autocore/files/cpuinfo
         cp -f ../cpuinfo package/lean/autocore/files/
+        make defconfig
 
-    - name: Download package
-      id: package
+    - name: download
+      id: download
       run: |
         cd $OPENWRTROOT
-        make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile the firmware
+    - name: Compile
       id: compile
       run: |
         cd $OPENWRTROOT
@@ -103,8 +107,8 @@ jobs:
         make -j$(nproc) || make -j1 V=s
         echo "::set-output name=COMPILE_STATUS::success"
 
-    - name: Package file
-      id: packagefile
+    - name: Package
+      id: package
       if: steps.compile.outputs.COMPILE_STATUS == 'success' && !cancelled()
       run: |
         cd $OPENWRTROOT/bin/
@@ -118,14 +122,10 @@ jobs:
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "FIRMWARE_DATE=$FIRMWARE_DATE" >> $GITHUB_ENV
         echo "::set-output name=PACKAGE_STATUS::success"
-
-    - name: Get current date
-      id: date
-      run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S%s')"
       
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v1-release
-      if: steps.packagefile.outputs.PACKAGE_STATUS == 'success' && !cancelled()
+      if: steps.package.outputs.PACKAGE_STATUS == 'success' && !cancelled()
       with:
         repo_token: ${{ secrets.REPO_TOKEN }}
         file: ${{ env.FIRMWARE }}/*
