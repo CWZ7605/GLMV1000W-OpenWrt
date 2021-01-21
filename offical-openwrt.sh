@@ -13,8 +13,8 @@ pushd package/
 svn co https://github.com/project-openwrt/openwrt/branches/openwrt-19.07/package/lean
 #svn co https://github.com/project-openwrt/openwrt/branches/openwrt-19.07/package/lienol
 svn co https://github.com/project-openwrt/openwrt/branches/openwrt-19.07/package/lienol/redsocks2
-rm -fr package/lean/luci-app-docker
-rm -fr package/lean/luci-app-ssr-plus
+rm -fr lean/luci-app-docker
+rm -fr lean/luci-app-ssr-plus
 popd
 
 pushd package/lean
