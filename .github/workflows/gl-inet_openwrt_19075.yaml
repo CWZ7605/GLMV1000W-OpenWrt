@@ -8,6 +8,8 @@ on:
       - 'gl-inet_mv1000w.config'
   #schedule:
   #  - cron: 0 21 * * *
+  repository_dispatch:
+  workflow_dispatch:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
